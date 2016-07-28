@@ -1,0 +1,74 @@
+#!/bin/bash
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+
+# Make the scroll lock LED blink
+# (outer right light over the numpad, unused nowadays)
+
+# Requires:
+# 1. A keyboard
+# 2. A keyboard with a numerical block
+# 3. A keyboard with a numerical block with fucking LEDs
+# 4. xset
+# 5. sleep (otherwise it's not going to "blink")
+
+LOCK_FILE=/tmp/kdb-notify.lock.$USER
+
+case $1 in
+
+stop|off)
+    kill $(<"$LOCK_FILE")
+    exit
+    ;;
+
+toggle)
+    if [ -e "$LOCK_FILE" ]; then
+        $0 stop
+    else
+        $0 start &
+    fi
+    exit
+    ;;
+
+start|on)
+    ;;
+
+*)
+    if [ -e "$LOCK_FILE" ]; then
+        echo "Seems to already notify, try \"$0 stop\""
+    else
+        $0 start &
+    fi
+    exit
+    ;;
+esac
+
+trap 'rm "$LOCK_FILE" > /dev/null 2>&1; xset -led 3; exit' INT TERM EXIT
+
+echo $$ > "$LOCK_FILE"
+while true; do
+    for ((i=0;i<3;++i)); do
+        xset led 3
+        sleep 0.4
+        xset -led 3
+        sleep 0.4
+    done
+    sleep 1
+done
+
+rm "$LOCK_FILE" > /dev/null 2>&1
+trap - INT TERM EXIT

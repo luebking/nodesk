@@ -1,0 +1,47 @@
+#!/bin/bash
+
+#!/bin/sh
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# A notification, system. Supports wrapped text (ie "foo\nbar")
+
+# Requires:
+# 1. dzen2
+# 2. mplayer (easily replaced by anything or noting, depending on whether you
+#    want sound
+
+SOUND_FILE="$HOME/.local/share/sounds/Hello.mp3"
+FONT="San Francisco Display-12" # Apples new font - bit white, but nice
+COLOR_BG='#272727'
+COLOR_FG='#FAFAFA'
+
+mplayer "$SOUND_FILE" </dev/null >/dev/null 2>&1 &
+
+if [ -z "$2" ]; then
+    HEADER="`date +'%A, %R'`"
+    MESSAGE="`echo -e "$1"`"
+else
+    HEADER="$1"
+    MESSAGE="`echo -e "$2"`"
+fi
+
+read HEIGHT WIDTH < <(wc -Ll <<< "$MESSAGE")
+
+WIDTH=$((8*WIDTH + 16))
+
+DISPLAY=:0 dzen2 -p $3 -e 'onstart=uncollapse,unhide;button1=exit:1' \
+                 -y 32 -x -${WIDTH} -sa c -l $HEIGHT -w $WIDTH -fn "$FONT" \
+                 -bg "$COLOR_BG" -fg "$COLOR_FG" < <(echo "$HEADER"; echo "$MESSAGE")

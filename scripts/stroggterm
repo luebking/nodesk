@@ -1,0 +1,59 @@
+#!/bin/bash
+
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# Map, activate or unmap a special xterm
+# The "OLD CODE" attempted to control geometry and layer, but fluxbox rules
+# do a better job on this, try:
+
+# [app] (name=xterm) (class=XTerm) (title=STROGG)
+#   [Workspace]   {0}
+#   [Dimensions]  {80% 27%}
+#   [Position]    (UPPERLEFT)     {10% 0%}
+#   [Deco]        {NONE}
+#   [Sticky]      {yes}
+#   [Layer]       {2}
+#   [Alpha]       {226 160}
+# [end]
+
+ACTIVE_NAME="`xdotool getactivewindow getwindowname`"
+([ "$ACTIVE_NAME" = "STROGG" ] && xdotool search --onlyvisible --name '^STROGG$' windowunmap >/dev/null 2>&1) || \
+xdotool search --name '^STROGG$' windowmap windowactivate >/dev/null 2>&1 || \
+xterm -rv -title STROGG -xrm 'xterm.*.allowTitleOps:false' &
+
+exit
+
+###### OLD CODE #########
+STROGG_ID="`wmctrl -l | grep -E ' STROGG$' 2>/dev/null`"
+if [ -z "$STROGG_ID" ]; then
+    xterm -rv -title STROGG -xrm 'xterm.*.allowTitleOps:false' &
+    sleep 2
+    STROGG_ID="`wmctrl -l | grep -E ' STROGG$' 2>/dev/null`"
+    if [ -z "$STROGG_ID" ]; then
+        exit
+    fi
+    wmctrl -F -r STROGG -b add,above,sticky
+    wmctrl -F -r STROGG -e 0,128,-16,1024,256
+fi
+ACTIVE_ID="`xprop -root _NET_ACTIVE_WINDOW`"
+if (( ${STROGG_ID%% *} == ${ACTIVE_ID##* } )); then
+    wmctrl -F -r STROGG -b add,hidden
+else
+    wmctrl -F -a STROGG
+    wmctrl -F -r STROGG -b add,above,sticky
+    wmctrl -F -r STROGG -e 0,128,-16,1024,256
+fi

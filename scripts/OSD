@@ -1,0 +1,86 @@
+#!/bin/bash
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# OSD emulation, mostly usable to show a progress (1-100) meter, eg. for volume
+# or brightness
+
+# Usage:
+# 1. OSD % 66
+# 2. OSD "Some message" (single line only, check "notify" for notifications)
+
+# Requires:
+# 1. dzen2
+# 2. mkfifo
+# 3. read, sed
+
+COLOR_BG='#272727'
+COLOR_FG='#fafafa'
+FONT='San Francisco Display-16'
+
+if (( $# < 2 )); then
+    echo "Usage `basename $0` <mode> <value> [delay]"
+    exit 1
+fi
+
+DELAY=${3:-2}
+FIFO=/tmp/.$USER.dzen.osd
+
+case $1 in
+volume|brightness|percent|%)
+    FONT='DejaVu Sans Mono-32'
+    ;;
+*)
+    ;;
+esac
+
+if [ ! -e $FIFO ]; then
+    mkfifo /tmp/.$USER.dzen.osd
+#    read SW SH SX SY < <(xrandr --listactivemonitors | sed '/0:/!d; s/.* \([0-9]*[^ ]*x[^ ]*+[^ ]*+[^ ]*\) .*/\1/; s%/[0-9]*%%g; s/[^0-9]/ /g')
+    read SW SH SX SY < <(xrandr --current | sed '/ connected/!d; s/.* \([0-9]*[^ ]*x[^ ]*+[^ ]*+[^ ]*\) .*/\1/; s%/[0-9]*%%g; s/[^0-9]/ /g')
+    OW=$((SW/4))
+    OH=$((SH/8))
+    (dzen2 -bg "$COLOR_BG" -fg "$COLOR_FG" -e "button1=exit:1" -x $((SX + (SW-OW)/2)) -w $OW -y $((SY + (SH-OH)/2)) -h $OH -fn "$FONT" < /tmp/.$USER.dzen.osd; rm $FIFO) &
+fi
+
+case $1 in
+volume|brightness|percent|%)
+    VALUE=$2
+    CHUNKS=0
+    STRING=""
+    while ((VALUE > 8 && ++CHUNKS < 12)); do
+        STRING+="◼"
+        ((VALUE-=9))
+    done
+    if ((++CHUNKS < 12)); then
+        if ((VALUE > 5)); then
+            STRING+="◾"
+        elif ((VALUE > 2)); then
+            STRING+="◻"
+        else
+            ((--CHUNKS))
+        fi
+    fi
+    while((++CHUNKS < 12)); do
+        STRING+="◽"
+    done
+    ;;
+*)
+    STRING="$2"
+    ;;
+esac
+
+(echo $STRING; sleep $DELAY) > $FIFO

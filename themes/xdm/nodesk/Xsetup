@@ -1,0 +1,10 @@
+#!/bin/sh
+
+## the root window should have this color
+xsetroot -solid "#272727" -cursor_name left_ptr
+
+## these are all optional
+/etc/X11/xdm/nodesk/buttons -geometry -0-0 &
+xclock -geometry +0-0 &
+numlockx on
+# xconsole -daemon -geometry 640x200-0+0

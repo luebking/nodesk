@@ -1,0 +1,113 @@
+#!/bin/sh
+
+#!/bin/sh
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+
+# A Lorem ipsum generator, comes in Minions flavor as well ;-)
+# Usage: loremipsum ["banana"] [<length>]
+
+if [[ "$1" = *minion* ]] || [[ "$1" = *banana* ]]; then
+    COUNT=$2
+    COUNT=${COUNT:=1}
+    i=0
+    while (($i < $COUNT)); do
+        echo 'Minions ipsum aute velit hahaha voluptate me want bananaaa! Qui wiiiii pepete duis underweaaar. Daa tempor consequat bee do bee do bee do pepete nostrud incididunt belloo! Ut bananaaaa jeje. Hana dul sae po kass tulaliloo daa magna bappleees. Belloo! exercitation qui reprehenderit wiiiii. Bee do bee do bee do duis butt veniam ex aaaaaah po kass magna incididunt poulet tikka masala. Chasy nostrud pepete duis ut et laboris la bodaaa duis para tú.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+        echo 'Sed sit amet bee do bee do bee do chasy poulet tikka masala bananaaaa labore exercitation duis. Para tú elit aliquip jiji. Daa belloo! Esse tank yuuu! Commodo potatoooo minim tatata bala tu. Esse exercitation ad eiusmod laboris aute gelatooo laboris belloo! Sit amet. Aute dolore aute baboiii labore. Po kass belloo! Laboris aaaaaah qui bananaaaa po kass tatata bala tu. Qui dolor consequat butt aute poulet tikka masala butt gelatooo consectetur tempor. Belloo! ad wiiiii para tú. Enim ut underweaaar nisi hana dul sae poopayee poopayee butt tulaliloo gelatooo.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+        echo 'Nisi hahaha daa tempor jeje. Exercitation magna aute underweaaar para tú po kass daa nisi veniam duis ut. Occaecat aliquip exercitation ad bappleees para tú tempor ex voluptate. Consectetur officia ut po kass hana dul sae officia. Belloo! dolore labore hahaha bananaaaa hana dul sae uuuhhh hana dul sae dolor elit. Esse commodo me want bananaaa! Laboris hahaha la bodaaa quis. Para tú baboiii hana dul sae jiji labore baboiii la bodaaa esse duis officia. Bee do bee do bee do poulet tikka masala hana dul sae ullamco pepete occaecat elit. Bappleees po kass irure tatata bala tu potatoooo minim me want bananaaa! Incididunt commodo bananaaaa.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+        echo 'Baboiii officia consequat tempor aliquip poulet tikka masala reprehenderit para tú tulaliloo ad pepete. Baboiii la bodaaa belloo! Velit poulet tikka masala aliqua. Reprehenderit tank yuuu! Consectetur aaaaaah nisi veniam officia butt tatata bala tu consectetur duis. Tank yuuu! ex sed poopayee magna. Jeje incididunt labore laboris tulaliloo underweaaar. Aliquip minim bappleees la bodaaa aute.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+
+    done
+else
+    COUNT=$1
+    COUNT=${COUNT:=1}
+    i=0
+    while (($i < $COUNT)); do
+        echo 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr,  sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr,  sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr,  sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+        echo 'Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+        echo 'Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+        echo 'Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+        echo 'Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+        echo 'At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr,  sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr,  At accusam aliquyam diam diam dolore dolores duo eirmod eos erat, et nonumy sed tempor et et invidunt justo labore Stet clita ea et gubergren, kasd magna no rebum. sanctus sea sed takimata ut vero voluptua. est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr,  sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+        echo 'Consetetur sadipscing elitr,  sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr,  sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr,  sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'
+
+        if ((++i >= $COUNT)); then
+            break;
+        fi
+
+        echo
+    done
+fi

@@ -1,0 +1,199 @@
+#!/bin/bash
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# Set a generic size wallpaper (to the root window)
+# This works by
+# 1. stretching some blurry base (can be 480x480 or so) over the entire screen
+# 2. tiling a nice pattern across it (to add some structured detail)
+# 3. optionally placing a logo on the center
+
+# Usage:
+# 1. bwp <wallpaper.bwp> # *.bwp is a tarball created by this script
+# 2. bwp <base.jpg> [<tile.png> [<center.png>]]
+# 3. bwp gen <base.jpg> <tile.png> [<center.png>] <wallpaper.bwp>
+
+# Requires:
+# 1. (preferably) GraphicsMagick or (much slower) ImageMagick
+# 2. tar
+# 3. feh (to actually set the root pixmap)
+# 4. grep, cat, tail (ie. binutils)
+
+if which gm > /dev/null 2>&1; then
+    HAVE_GM=true
+elif which convert > /dev/null 2>&1; then
+    echo -e "Warning: only ImageMagick found, this is likely overly slow\n\
+             Consider installing GraphicsMagick\n\
+             (IM operates on 32 bit float per pixel by default)"
+    HAVE_GM=false
+else
+    echo -e "Error: This tool requires GraphicsMagick or ImageMagick, but neither was found"
+fi
+
+case "$1" in
+
+c|create|gen|g|generate)
+
+    if (( ${#} < 4 )); then
+        echo "Usage: $0 $1 <base.jpg> <tile.png> [<center.png>] <result.bwp>"
+        exit 1
+    fi
+
+    if [ ! -e "$2" ]; then
+        echo "Base image \"$2\" does not exist"
+        exit 1
+    fi
+    if [ ! -e "$3" ]; then
+        echo "Tile image \"$3\" does not exist"
+        exit 1
+    fi
+
+    if (( ${#} < 5 )); then
+        TFILE="`basename "${4}"`"
+    else
+        TFILE="`basename "${5}"`"
+    fi
+    TDIR="/tmp/$TFILE"
+
+    mkdir -p "$TDIR"
+    cp "$2" "$TDIR/base.jpg"
+    cp "$3" "$TDIR/tile.png"
+    if (( ${#} > 4 )); then
+        cp "$4" "$TDIR/center.png"
+    fi
+
+    if $HAVE_GM; then
+        THUMB_CMD="gm composite -tile \"$TDIR/tile.png\" -resize 1440x900! \"$TDIR/base.jpg\" \"$TDIR/out.bmp\""
+    else
+        THUMB_CMD="convert \"$TDIR/tile.png\" \( -clone 0 -background none \) +append \( -clone 0 -background none \) -append -write mpr:tile +delete \"$TDIR/base.jpg\" -scale 480x300! -compose Over -size 480x300 tile:mpr:tile -composite"
+    fi
+    pushd "$TDIR"  > /dev/null
+    TFILE="${TFILE%.bwp}.bwp"
+    if [ -e center.png ]; then
+        tar -cJf "$TFILE" base.jpg tile.png center.png
+        if $HAVE_GM; then
+            THUMB_CMD+=";gm composite -gravity center \"$TDIR/center.png\" \"$TDIR/out.bmp\" \"$TDIR/out.bmp\""
+        else
+            THUMB_CMD+=" \( \"$TDIR/center.png\" -scale 25% \) -compose Over -gravity Center -composite"
+        fi
+    else
+        tar -cJf "$TFILE" base.jpg tile.png
+    fi
+    popd > /dev/null
+
+    if $HAVE_GM; then
+        THUMB_CMD+=";gm convert -scale 480x300 -quality 75 \"$TDIR/out.bmp\" \"$TDIR/thumb.jpg\""
+    else
+        THUMB_CMD+=" -scale 480x300 -quality 75 \"$TDIR/thumb.jpg\""
+    fi
+
+    eval "$THUMB_CMD"
+
+    cat "$TDIR/thumb.jpg" <(echo -n BWPBWPBWPBWP) "${TDIR}/${TFILE}" > "${TFILE}"
+
+    rm -r "${TDIR}"
+    ;;
+
+*)
+
+    [ -z $1 ] && exit
+
+    # xsetroot -solid black
+
+    if [[ "$1" = *.bwp ]]; then
+        FILE=`basename "$1"`
+        BWP=true
+    else
+        FILE="bwp.wrk"
+        BWP=false
+    fi
+
+    mkdir -p "/tmp/$FILE"
+
+    if $BWP; then
+        SPLIT=`LANG=C grep -obUaP 'BWPBWPBWPBWP\xFD7zXZ' "$1"`
+        if [ -z $SPLIT ]; then
+            cp -f "$1" "/tmp/$FILE"
+        else
+            SPLIT="${SPLIT%%:*}"
+            tail -c +$((13 + SPLIT)) "$1"  > "/tmp/$FILE/$FILE"
+        fi
+        cd "/tmp/$FILE/"
+        tar -xf "$FILE"
+    else
+        cp "$1" "/tmp/$FILE/base.jpg"
+        [ -z "$2" ] || cp "$2" "/tmp/$FILE/tile.png"
+        [ -z "$3" ] || cp "$3" "/tmp/$FILE/center.png"
+        cd "/tmp/$FILE/"
+    fi
+
+    if ! $HAVE_GM; then
+        [ -e tile.png ] && TILE_CMD="tile.png \( -clone 0 -background none \) +append \( -clone 0 -background none \) -append -write mpr:tile +delete"
+        [ -e center.png ] && CENTER_CMD="center.png -write mpr:center +delete"
+    fi
+
+    while read OUT STATE GEO_1 GEO_2 JUNK; do
+        if [ "$OUT" = "Screen" ] && [[ "$JUNK" = *" current "* ]]; then
+            SZ="${JUNK#* current }"
+            SZ="${SZ%%,*}"
+            SZ="${SZ// /}"
+            if $HAVE_GM; then
+                ROOT_CMD="gm convert -size $SZ xc:black bwp.bmp;"
+            else
+                ROOT_CMD="-size $SZ xc:black -write mpr:root +delete"
+            fi
+            continue
+        fi
+        if [ "$STATE" != connected ]; then
+            continue
+        fi
+        if [[ "$GEO_1" = *x*+*+* ]]; then
+            GEO="$GEO_1"
+        elif [[ "$GEO_2" = *x*+*+* ]]; then
+            GEO="$GEO_2"
+        else
+            continue
+        fi
+        SZ=${GEO%%+*}
+        if $HAVE_GM; then
+            if [ -e tile.png ]; then
+                IMG_CMD+=" gm composite -tile tile.png -resize ${SZ}! base.jpg out.bmp;"
+                [ -e center.png ] &&  IMG_CMD+=" gm composite -gravity center center.png out.bmp out.bmp;"
+            elif [ -e center.png ]; then 
+                IMG_CMD+=" gm composite -gravity center center.png -resize ${SZ}! base.jpg out.bmp;"
+            fi
+            IMG_CMD+=" gm composite -compose Copy -geometry $GEO out.bmp bwp.bmp bwp.bmp;"
+        else
+            IMG_CMD+=" \( mpr:base -scale ${SZ}!"
+            [ -z "$TILE_CMD" ] || IMG_CMD+=" -compose Over -size $SZ tile:mpr:tile -composite"
+            [ -z "$CENTER_CMD" ] || IMG_CMD+=" mpr:center -compose Over -gravity Center -composite"
+            IMG_CMD+=" \) -compose Copy -gravity undefined -geometry $GEO -composite"
+        fi
+    done < <(xrandr --current)
+
+    if $HAVE_GM; then
+        eval "$ROOT_CMD $IMG_CMD"
+        feh --no-xinerama --bg-center bwp.bmp
+    else
+        eval "convert base.jpg -write mpr:base +delete $ROOT_CMD $CENTER_CMD $TILE_CMD mpr:root $IMG_CMD bwp.jpg"
+        echo "convert base.jpg -write mpr:base +delete $ROOT_CMD $CENTER_CMD $TILE_CMD mpr:root $IMG_CMD bwp.jpg"
+        feh --no-xinerama --bg-center bwp.jpg
+    fi
+
+
+    rm -rf "/tmp/$FILE"
+    ;;
+esac 

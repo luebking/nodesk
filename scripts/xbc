@@ -1,0 +1,28 @@
+#!/bin/sh
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# A wrapper around xterm, rlwrap and bc to turn bc into a somewhat more decent calculator
+# While bc uses rlwrap, it nukes the prompt so you can no differ in- from output
+# Also this ensures the separator on the numpad is turned into a dot
+
+# funcs.bc and logic.bc are from http://phodd.net/gnu-bc/
+
+# Requires: xterm, rlwrap, bc
+
+xterm -uc -xrm 'xterm.vt100.translations: #override <Key>KP_Delete:string(.)' \
+      -rv -title Calculator -fa ":bold" -fs 14 -geometry 40x10 -e rlwrap \
+      -pyellow -a -S'= ' bc -ql ~/.local/share/bc/code/funcs.bc ~/.local/share/bc/code/logic.bc

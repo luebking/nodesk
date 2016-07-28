@@ -1,0 +1,194 @@
+#!/bin/bash
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, thomas.luebking@gmail.com
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# A wrapper around udisks to access attached devices via a custom fluxbox menu
+# located in /tmp/.flux.$UID.menu.mounts
+# try "fbdisks help" for usage
+
+# Requires
+# 1. udisks, udisksctl
+# 2. lsblk
+# 3. eject (for discs)
+# 4. sed, sleep
+
+source /etc/fluxbox/fbdisks.conf 2>/dev/null
+
+source $HOME/.fluxbox/fbdisks.conf 2>/dev/null
+
+[ -z "$MENU_FILE" ] && MENU_FILE=/tmp/.flux.$UID.menu.mounts
+[ -z "$PID_FILE" ] && PID_FILE=/tmp/.flux.$UID.fbdisks.pid
+
+
+case $1 in
+
+monitor)
+    $0 stop-monitor
+    udisks --enumerate > /dev/null # lennartware sometimes needs a kick in the butt
+    $0 update # first, create a status quo menu ;-)
+    declare -A EMPTY_ROMS
+    while read ACTION DEVICE; do
+        if [ "$ACTION" = "changed:" ]; then
+            sleep 0.5
+        elif [ "$ACTION" = "removed:" ]; then
+            eval $NOTIFY_REMOVE & $0 update
+            continue
+        elif [ "$ACTION" != "added:" ]; then # junk
+            continue
+        fi
+        while read LINE; do
+            eval $LINE
+            [ "${NAME##*/}" = "${DEVICE##*/}" ] || continue # not the changed device
+            [ -z "$MOUNTPOINT" ] || continue # already mounted
+            if [ -z "$FSTYPE" ]; then # smells like empty disc
+                if [ "$RM" = "1" ]; then
+                    [ "${EMPTY_ROMS["${DEVICE}"]}" = "1" ] || eval $NOTIFY_REMOVE & $0 update
+                    EMPTY_ROMS["${DEVICE}"]="1"
+                fi
+                continue
+            fi
+            [ "$TYPE" = "disk" -a "$FSTYPE" = "" ] && continue # that's rather a HD than a partition
+            [ "$ACTION" != "changed:" -o "$RM" = "1" ] || continue # only watch changes of discs
+            [ "$RM" = "1" ] &&  EMPTY_ROMS["${DEVICE}"]="0"
+            eval $NOTIFY_ADD & $0 update
+        done < <(lsblk -Ppno NAME,LABEL,MOUNTPOINT,FSTYPE,SIZE,TYPE,RM)
+
+    done < <(udisks --monitor & DAEMON_PID=$!; echo $DAEMON_PID > "$PID_FILE"; wait $DAEMON_PID)
+    ;;
+
+stop-monitor)
+    kill $(<"$PID_FILE")
+    rm "$PID_FILE"
+    ;;
+
+update)
+    MENU="[begin]\n"
+    while read line; do
+        eval $line
+        [ -z $LABEL ] && LABEL=$UUID
+        if [[ "$NAME" = *"sda"* ]] || [ "$TYPE" = "disk" -a "$FSTYPE" = "" ]; then
+            continue
+        fi
+        if [ "$RM" = "1" ] && [ -z $FSTYPE ]; then
+            MENU="${MENU}[separator]\n[exec] (⏏ ${MODEL}) {eject -T ${NAME}}\n"
+        else
+            MENU="${MENU}[submenu](${LABEL})\n"
+            if [ -z "$MOUNTPOINT" ]; then # not mounted
+                MENU="${MENU}[exec] (Mount) {"$0" mount ${NAME} ${RM}}\n"
+            else
+                MENU="${MENU}[exec] (Eject) {"$0" unmount ${NAME} ${RM}}\n"
+            fi
+            MENU="${MENU}[exec] (Open) {"$0" open ${NAME} ${RM}}\n"
+            if [ "$RM" = "1" ]; then
+                if [ $FSTYPE = "udf" ]; then # likely video DVD
+                    MENU="${MENU}[exec] (Play) {$DVD_PLAY_VIDEO ${NAME}}\n"
+                fi
+                MENU="${MENU}[separator]\n[exec] (⏏ ${MODEL}) {eject -T ${NAME}}\n"
+            fi
+        fi
+        MENU="${MENU}[end]\n"
+    done < <(lsblk -Ppno NAME,LABEL,MOUNTPOINT,FSTYPE,SIZE,TYPE,RM,MODEL,UUID)
+    MENU="${MENU}[end]"
+    echo -e "$MENU" > "$MENU_FILE"
+    ;;
+
+mount)
+    MPATH=`lsblk -Ppno NAME,MOUNTPOINT | sed '\%'$2'%!d; s/.* MOUNTPOINT=//'`
+    if [ $MPATH != '""' ]; then
+        echo $MPATH
+        exit
+    fi
+    DEVICE="$2"
+    if [[ "$3" = "1" ]]; then # ejectable, may require tray first
+        # try to mount, otherwise tray, wait and ..
+        if ! udisksctl mount -b $DEVICE >/dev/null 2>&1; then
+            eject -T $DEVICE >/dev/null 2>&1; sleep 5
+            # .. try again, finally eject on failure
+            udisksctl mount -b $DEVICE >/dev/null 2>&1 || eject $DEVICE >/dev/null 2>&1
+        fi
+    else
+        udisksctl mount -b $DEVICE >/dev/null 2>&1
+    fi
+    $0 update >/dev/null 2>&1
+    lsblk -Ppno NAME,MOUNTPOINT | sed '\%'$DEVICE'%!d; s/.* MOUNTPOINT=//'
+    ;;
+
+unmount)
+    DEVICE="$2"
+    type fbdisks_tidy_up >/dev/null && fbdisks_tidy_up $DEVICE
+    udisksctl unmount -b $DEVICE >/dev/null 2>&1
+    if [[ "$3" = "1" ]]; then # ejectable, offer the user
+        eject $DEVICE >/dev/null 2>&1
+        sleep 30 # wait until I picked the disc
+        eject -t $DEVICE >/dev/null 2>&1 # re-tray, open disc drives suck dust ;-)
+    fi
+    $0 update
+    ;;
+
+open)
+    MPATH=`lsblk -Ppno NAME,MOUNTPOINT | sed '\%'$2'%!d; s/.* MOUNTPOINT=//'`
+    if [ $MPATH = '""' ]; then
+        MPATH=`$0 mount $2 $3`
+    fi
+    MPATH=${MPATH#\"}
+    MPATH=${MPATH%\"}
+
+    eval $FILE_MANAGER \'$MPATH\'
+    ;;
+
+selftest)
+    which udisks >/dev/null 2>&1 || echo "BAD! udisks is absolutely mandatory for proper function"
+    which udisksctl >/dev/null 2>&1 || echo "BAD! udisksctl is absolutely mandatory for proper function"
+    which lsblk >/dev/null 2>&1 || echo "BAD! lsblk is absolutely mandatory for proper function"
+    which eject >/dev/null 2>&1 || echo "WARNING! eject is required to control optical disc drives"
+    which sleep >/dev/null 2>&1 || echo "WARNING! sleep is used to delay actions after tray control"
+    ;;
+
+*)
+    CMD="`basename $0`"
+    echo -e "\n\
+Usage:\n\
+======\n\
+$CMD monitor             : listen to device changes an update a fluxbox menu file (see config section)\n\
+$CMD stop-monitor        : stop the monitor (guess what ;-)\n\
+$CMD update              : explicitly update the menu file\n\
+$CMD mount <dev> [0|1]   : wrapper around udisks mount and eject, used by the menu\n\
+$CMD unmount <dev> [0|1] : wrapper around udisks unmount and eject, used by the menu\n\
+$CMD open <dev> [0|1]    : ensures mount and opens device in a preferred filemanager (see config section)\n\
+The optional 0 or 1 flags hint whether the device is ejectable\n\
+$CMD selftest            : check for presence of required tools and warn about missing ones\n\
+\n\
+Configuration:\n\
+==============\n\
+/etc/fluxbox/fbdisks.conf and \$HOME/.fluxbox/fbdisks.conf are sourced (in this order)\n\n\
+Relevant variables are:\n\
+-----------------------\n\
+FILE_MANAGER  : The filemanager command you'd like to run (the path is appended)\n\
+NOTIFY_ADD    : Command to run, when a device is added\n\
+NOTIFY_REMOVE : Command to run, when a device is removed\n\n\
+Example config:\n\
+---------------\n\
+FILE_MANAGER=\"xterm -e mc\"\n\
+NOTIFY_ADD=\"aplay \$HOME/.local/share/sounds/hwin.wav\"\n\
+NOTIFY_REMOVE=\"aplay \$HOME/.local/share/sounds/hwout.wav\"\n\n\
+-------------------\n\n\
+In addition:\n\
+------------\n\
+MENU_FILE     : The menu file to read, presently $MENU_FILE\n\
+PID_FILE      : The place where the daemon PID is stored, presently $PID_FILE\n\n\
+The default values incorporate your \$UID ($UID)\n\n"
+    ;;
+esac

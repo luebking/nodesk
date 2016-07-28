@@ -1,0 +1,72 @@
+
+!! BRIGHT SETUP
+
+!BLK Cursor
+#define _color0        #FAFAFA
+#define _color8        #FAFAFA
+!RED Tag
+#define _color1        #990000
+#define _color9        #990000
+!GRN SpecialKey
+#define _color2        #73ba25
+#define _color10       #73ba25
+!YEL Keyword
+#define _color3        #FFBC00
+#define _color11       #FFBC00
+!BLU Number
+#define _color4        #4060FF
+#define _color12       #4060FF
+!MAG Precondit
+#define _color5        #E20074
+#define _color13       #E20074
+!CYN Float
+#define _color6        #1793D0
+#define _color14       #1793D0
+!WHT Search
+#define _color7        #272727
+#define _color15       #272727
+!FMT Include, StatusLine, ErrorMsg
+#define _colorBD       #272727
+#define _colorUL       #272727
+#define _colorIT       #272727
+!TXT Normal, Normal, Cursor
+#define _foreground    #272727
+#define _background    #FAFAFA
+!#1f1f1f
+#define _cursorColor   #1793d0
+
+!! DARK SETUP
+
+!BLK Cursor
+#define _color0        #272727
+#define _color8        #272727
+!RED Tag
+#define _color1        #990000
+#define _color9        #990000
+!GRN SpecialKey
+#define _color2        #73ba25
+#define _color10       #73ba25
+!YEL Keyword
+#define _color3        #FFBC00
+#define _color11       #FFBC00
+!BLU Number
+#define _color4        #4060FF
+#define _color12       #4060FF
+!MAG Precondit
+#define _color5        #E20074
+#define _color13       #E20074
+!CYN Float
+#define _color6        #1793D0
+#define _color14       #1793D0
+!WHT Search
+#define _color7        #FAFAFA
+#define _color15       #FAFAFA
+!FMT Include, StatusLine, ErrorMsg
+#define _colorBD       #FAFAFA
+#define _colorUL       #FAFAFA
+#define _colorIT       #FAFAFA
+!TXT Normal, Normal, Cursor
+#define _foreground    #FAFAFA
+#define _background    #272727
+!#1f1f1f
+#define _cursorColor   #1793d0

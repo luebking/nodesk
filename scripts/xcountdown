@@ -1,0 +1,78 @@
+#!/bin/bash
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# A count-down timer
+# Usage: xcountdown [<time> [<scale> [<title> [<action> ["rescue"]]]]]
+
+# <time> is the amount of units to countdown (defaults to 10)
+# <scale> is s|econds, m|inutes or h|ours (defaults to seconds)
+# <action> is executed when the timeout finishes (and is not aborted)
+# passing "rescue" allows you to click the timer to abort it
+
+# Requires
+# 1. dzen2
+# 2. bc
+# 3. printf, sleep
+
+# Fun fact:
+# ----------
+# The countdown was invented by Fritz Lang to raise tension in the 1929
+# silent-movie "Frau im Mond" (rocket launch, yes the NASA copied that and
+# much more. The film was a favorite of v. Braun and his team.)
+# It's on youtube, rocket scene after ~76 Minutes, lasts 15 minutes or so.
+# Go, watch it!
+
+FONT="San Francisco Display-16"
+COLOR_BG='#272727'
+COLOR_FG='#fafafa'
+
+
+COUNT=${1:-10}
+SCALE=${2:-s}
+
+if [ "$SCALE" = "h" ]; then
+    SCALE=m
+    COUNT=`echo ${COUNT}*60 | bc`
+    COUNT=${COUNT%.*}
+elif [ "$SCALE" = "m" ]; then
+    SCALE=s
+    COUNT=`echo ${COUNT}*60 | bc`
+    COUNT=${COUNT%.*}
+fi
+
+WIDTH=${#3}
+if ((WIDTH < 5)); then WIDTH=5; fi
+WIDTH=$((16*WIDTH + 16)) # 16 px font width est.
+
+ACTIONS="onstart=uncollapse,unhide"
+if [ "$5" = "rescue" ]; then
+    ACTIONS="${ACTIONS};button1=exit:1"
+fi
+
+dzen2 -e "$ACTIONS" -y 32 -x -${WIDTH} -sa c -l 1 -w $WIDTH -fn "$FONT" -bg "$COLOR_BG" -fg "$COLOR_FG" < \
+<(echo "$3" # Title
+for ((i=$COUNT; i>0; --i)); do
+    if [ "$SCALE" = "m" -a "$i" = "60" ]; then
+        SCALE=s
+        i=3600
+    fi
+    printf '%02d:%02d\n' $((i/60)) $((i%60))
+    sleep 1${SCALE}
+done)
+if [ "$?" = "0" ]; then
+    $4
+fi

@@ -1,0 +1,65 @@
+#!/bin/sh
+
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# Reads the Executables from a fluxbox menu into a completion list for dmenu
+# Handles executions in a a favorite list
+
+# Requires:
+# 1. dmenu
+# 2. mmaker (to create an application menu include)
+# 3. sed, cat, sort
+
+FONT="San Francisco Display-14"
+
+if [ "$1" = "update" ] || [ ! -e ~/.fluxbox/menu.apps ]; then
+    mmaker -c -i -t xterm fluxbox > ~/.fluxbox/menu.apps
+#    sed '/\[exec\]/!d;s/.*(\(.*\)).*/\1/g' ~/.fluxbox/menu.apps | sort > ~/.fluxbox/dmenu_apps
+    sed '/\[exec\]/!d;s/.*(\(.*\)).*{\(.*\)}.*/\1                                                                                      \2/g' ~/.fluxbox/menu.apps  | sort -f > ~/.fluxbox/dmenu_apps
+    [ "$1" = "update" ] && exit
+fi
+
+
+favs=~/.fluxbox/dmenu_favs
+
+# we need this to exist
+touch $favs
+
+# read selection
+APP="`echo | cat $favs - ~/.fluxbox/dmenu_apps | dmenu -i -t -l 10 -w 320 -x 480 -o 0.9 -y 320 -fn "$FONT"`"
+[ -z "$APP" ] && exit 1 #canceled
+
+CMD=${APP#*                                                                                      }
+
+# map input to command
+if [ -z "$CMD" ] || [ "$CMD" = "$APP" ]; then
+    CMD="`sed '/'"${APP}"'/!d; s/.*{\(.*\)}.*/\1/g' ~/.fluxbox/menu.apps`"
+fi
+
+# sanitize input and command
+if [ -z "$CMD" ]; then
+    CMD="$APP" # call whatever this is
+#else
+#    APP="`sed '/'"${CMD}"'/!d; s/.*(\(.*\)).*/\1/g' ~/.fluxbox/menu.apps`" # map to complete string
+fi
+
+# write favorites
+FAV_LIST="`(echo "${APP}"; grep -v -E '^(\s*|'"${APP}"')$' "$favs") | head -n10`"
+echo "$FAV_LIST" > "$favs"
+
+# and finally exec the command
+echo "$CMD" | ${SHELL:-"/bin/sh"} &

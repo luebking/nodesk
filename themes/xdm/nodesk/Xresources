@@ -1,0 +1,52 @@
+Xlogin*login.translations:#override \
+	CtrlR:abort-display()\n\
+	F1:set-session-argument(failsafe) finish-field()\n\
+	Return:set-session-argument() finish-field()\n\
+	CtrlReturn:set-session-argument(failsafe) finish-field()\n\
+
+Xlogin*greeting:CLIENTHOST:\040terminal\040available
+Xlogin*namePrompt:Login:\040
+Xlogin*passwdPrompt:Key:\040
+Xlogin*fail:incorrect
+Xlogin*greetFace:San\040Francisco\040Display-36:style=Thin
+Xlogin*promptFace:San\040Francico\040Dispaly-24:style=Bold
+Xlogin*face:San\040Francisco\040Display-20
+Xlogin*failFace:San\040Francisco\040Display-24:style=Bold
+Xlogin*shdColor:#272727
+Xlogin*hiColor:#272727
+Xlogin*greetColor:#1793D0
+Xlogin*promptColor:#fafafa
+Xlogin*failColor:#990000
+Xlogin*logoFileName:/etc/X11/xdm/nodesk/doom.xpm
+Xlogin*echoPasswd:true
+
+*borderWidth:0
+*foreground:#fafafa
+*background:#272727
+
+XClock*analog:false
+XClock*strftime:(%A)\040%F\040%T
+XClock*update:1
+XClock*render:false
+XClock*font:-xos4-terminus-medium-r-normal--32-320-72-72-c-160-iso10646-1
+XClock.width:640
+
+Xmessage*message.scrollVertical:auto
+Xmessage*message.scrollHorizontal:never
+Xmessage*Command.highlightThickness:2
+Xmessage*Command.internalWidth:8
+Xmessage*Command.internalHeight:8
+Xmessage*Command.shapeStyle:rectangle
+Xmessage*Command.font:-xos4-terminus-medium-r-normal--32-320-72-72-c-160-iso10646-1
+Xmessage*font:-xos4-terminus-medium-r-normal--32-320-72-72-c-160-iso10646-1
+
+XConsole*verbose:true
+XConsole*exitOnFail:true
+
+Chooser*geometry:700x500
+Chooser*allowShellResize:false
+Chooser*viewport.forceBars:true
+Chooser*label.font:-*-terminus-*-*-*-*-*-*-*-*-*-*-*
+Chooser*label.label:XDMCP\040Host\040Menu\040from\040CLIENTHOST
+Chooser*list.font:-*-terminus-*-*-*-*-*-*-*-*-*-*-*
+Chooser*Command.font:-*-terminus-*-*-*-*-*-*-*-*-*-*-*
