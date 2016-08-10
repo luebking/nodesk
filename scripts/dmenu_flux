@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 
 #            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
@@ -22,14 +22,17 @@
 # Requires:
 # 1. dmenu
 # 2. mmaker (to create an application menu include)
-# 3. sed, cat, sort
+# 3. xdotool (to check for running compositor)
+# 4. sed, cat, sort
 
 FONT="San Francisco Display-14"
+
+PAD="`printf '%.s ' {0..200}`"
 
 if [ "$1" = "update" ] || [ ! -e ~/.fluxbox/menu.apps ]; then
     mmaker -c -i -t xterm fluxbox > ~/.fluxbox/menu.apps
 #    sed '/\[exec\]/!d;s/.*(\(.*\)).*/\1/g' ~/.fluxbox/menu.apps | sort > ~/.fluxbox/dmenu_apps
-    sed '/\[exec\]/!d;s/.*(\(.*\)).*{\(.*\)}.*/\1                                                                                      \2/g' ~/.fluxbox/menu.apps  | sort -f > ~/.fluxbox/dmenu_apps
+    sed '/\[exec\]/!d;s/.*(\(.*\)).*{\(.*\)}.*/\1'"$PAD"'\2/g' ~/.fluxbox/menu.apps  | sort -f > ~/.fluxbox/dmenu_apps
     [ "$1" = "update" ] && exit
 fi
 
@@ -39,11 +42,23 @@ favs=~/.fluxbox/dmenu_favs
 # we need this to exist
 touch $favs
 
+read SW SH SX SY < <(xrandr --current | sed '/ connected/!d; s/.* \([0-9]*[^ ]*x[^ ]*+[^ ]*+[^ ]*\) .*/\1/; s%/[0-9]*%%g; s/[^0-9]/ /g')
+
+
+SX=$((SW-SW/4)/2))
+SW=$((SW/4))
+SY=$(((SH-SH/4)/2))
+SH=$((SH/4))
+
+if xdotool search -name "^xcompmgr$" >/dev/null 2>&1; then
+    DIM="-dim 0.3"
+fi
+
 # read selection
-APP="`echo | cat $favs - ~/.fluxbox/dmenu_apps | dmenu -i -t -l 10 -w 320 -x 480 -o 0.9 -y 320 -fn "$FONT"`"
+APP="`echo | cat $favs - ~/.fluxbox/dmenu_apps | dmenu $DIM -i -t -l 10 -w $SW -x $SX -o 0.9 -y $SY -fn "$FONT"`"
 [ -z "$APP" ] && exit 1 #canceled
 
-CMD=${APP#*                                                                                      }
+CMD=${APP##*                                                         }
 
 # map input to command
 if [ -z "$CMD" ] || [ "$CMD" = "$APP" ]; then
