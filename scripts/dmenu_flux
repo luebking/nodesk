@@ -45,7 +45,7 @@ touch $favs
 read SW SH SX SY < <(xrandr --current | sed '/ connected/!d; s/.* \([0-9]*[^ ]*x[^ ]*+[^ ]*+[^ ]*\) .*/\1/; s%/[0-9]*%%g; s/[^0-9]/ /g')
 
 
-SX=$((SW-SW/4)/2))
+SX=$(((SW-SW/4)/2))
 SW=$((SW/4))
 SY=$(((SH-SH/4)/2))
 SH=$((SH/4))
