@@ -1,0 +1,48 @@
+#!/bin/bash
+
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# Reads managed windows into a completion list for dmenu to activate a window
+
+# Requires:
+# 1. dmenu
+# 2. wmctrl
+# 3. xdotool (to check for running compositors)
+# 4. sed
+
+FONT="San Francisco Display-14"
+
+
+read SW SH SX SY < <(xrandr --current | sed '/ connected/!d; s/.* \([0-9]*[^ ]*x[^ ]*+[^ ]*+[^ ]*\) .*/\1/; s%/[0-9]*%%g; s/[^0-9]/ /g')
+
+SX=$(((SW-SW/3)/2))
+SW=$((SW/3))
+SY=$(((SH-SH/3)/2))
+SH=$((SH/3))
+
+PAD="`printf '%.s ' {0..200}`"
+
+if xdotool search -name "^xcompmgr$" >/dev/null 2>&1; then
+    DIM="-dim 0.3"
+fi
+
+
+WIN="`wmctrl -l  | sed 's/\([^ ]*\) \([^ ]* \)\{3,3\}\(.*\)/\3'"$PAD"'\1/g' | dmenu $DIM -i -t -l 10 -w $SW -x $SX -o 0.9 -y $SY -fn "$FONT"`"
+[ -z "$WIN" ] && exit 1 #canceled
+
+WIN=${WIN##*                                                                  }
+wmctrl -i -a $WIN
