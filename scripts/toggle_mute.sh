@@ -25,12 +25,13 @@
 # 3. the OSD script
 
 FILE="/tmp/.$USER.alsa.volume"
-if [ -e "$FILE" ]; then
+VOLUME="`amixer sget Master |  grep -oE "[[:digit:]]*%"`"
+if [ $VOLUME = "0%" ] && [ -e "$FILE" ]; then
     VOLUME="`cat "$FILE"`"
     OSD % `amixer sset Master "$VOLUME" | sed -e '/[[:digit:]]*%/!d; s/.*\[\([[:digit:]]*\)%\].*/\1/g'` 1
     rm "$FILE"
 else
-    amixer sget Master |  grep -oE "[[:digit:]]*%" > "$FILE"
+    echo "$VOLUME" > "$FILE"
     amixer -q sset Master 0
     OSD "" "Muted" 1
 fi
