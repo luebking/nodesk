@@ -1,0 +1,7 @@
+[begin]
+[encoding] {UTF-8}
+    [include] (~/.fluxbox/menu.apps)
+    [separator]
+    [include] (~/.fluxbox/menu.flux)
+[endencoding]
+[end]
