@@ -1,0 +1,108 @@
+#!/bin/bash
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# Set a random wallpaper (to the root window) every 3*n/4+n/2 seconds
+# (ie a random time around n ;-)
+
+# Usage:
+# 1. rwp <path> [<delay>]
+# 2. rwp quit
+# 3. rwp skip (if you hit a NSFW wallpaper ;-)
+# 4. rwp set path <path>
+# 5. rwp set delay <delay>
+# 6. rwp set <path> [<delay>]
+
+# Requires:
+# 1. feh (to set the wallpaper)
+# 2. find (to list the path)
+# 3. nice, sleep, wait, read, ... ie. binutils)
+
+CONTROL="/tmp/${USER}.rwp.conf"
+
+if [ "$1" = "set" ]; then
+    read PID DELAY DIR > /dev/null 2>&1 < $CONTROL
+    if [ -z $PID ]; then
+        echo "`basename $0` does not seem to be running"
+        exit 1
+    fi
+    if [ "$2" = "path" ]; then
+        if [ -d "$3" ]; then
+            DIR="$3"
+        else
+            echo "$3 is not a directory"
+            exit 1
+        fi
+    elif [ "$2" = "delay" ]; then
+        if [ ! -z "${3##*[!0-9]*}" ]; then
+            DELAY="$3"
+        else
+            echo "$3 is not a number"
+            exit 1
+        fi
+    elif [ -d "$2" ]; then
+        DIR="$2"
+        if [ ! -z "${3##*[!0-9]*}" ]; then
+            DELAY=$3
+        fi
+    else
+        echo "`basename $0` set path|delay|<path> <path>|<delay>[|delay]"
+        exit 1
+    fi
+    echo "$PID $DELAY $DIR" > $CONTROL
+    kill -SIGINT $PID
+    exit 0
+elif [ "$1" = "skip" ]; then
+    read PID JUNK > /dev/null 2>&1 < $CONTROL
+    kill -SIGINT $PID
+    exit 0
+elif [ "$1" = "quit" ]; then
+    read PID JUNK > /dev/null 2>&1 < $CONTROL
+    if [ -z $PID ]; then
+        echo "`basename $0` does not seem to be running"
+        exit 1
+    fi
+    kill $PID
+    rm $CONTROL
+    exit 0
+fi
+
+if [ ! -d "$1" ]; then
+    echo "There's no directory $1"
+    exit 1
+fi
+
+DIR="$1"
+DELAY=${2:-120}
+
+trap "SKIP=true; read PID DELAY DIR < $CONTROL" SIGINT
+
+echo "$$ $DELAY $DIR" > $CONTROL
+
+while true; do
+    HAVE_WP=false
+    SKIP=false
+    while read WP; do
+        $SKIP && continue
+        nice -19 feh --bg-fill "$WP" > /dev/null 2>&1 || continue
+        HAVE_WP=true
+        sleep $((3*DELAY/4 + RANDOM%(DELAY/2))) &
+        wait $! # sleep won't react on interrupts
+    done < <(find "$DIR" -type f |shuf)
+    $HAVE_WP && continue
+    echo "No wallpapers in $DIR"
+    exit 1
+done
