@@ -78,7 +78,7 @@ update)
     MENU="[begin]\n"
     while read line; do
         eval $line
-        [ -z $LABEL ] && LABEL=$UUID
+        [ -z "$LABEL" ] && LABEL=$UUID
         if [[ "$NAME" = *"sda"* ]] || [ "$TYPE" = "disk" -a "$FSTYPE" = "" ]; then
             continue
         fi
@@ -88,15 +88,18 @@ update)
             MENU="${MENU}[submenu](${LABEL})\n"
             if [ -z "$MOUNTPOINT" ]; then # not mounted
                 MENU="${MENU}[exec] (Mount) {"$0" mount ${NAME} ${RM}}\n"
-            else
-                MENU="${MENU}[exec] (Eject) {"$0" unmount ${NAME} ${RM}}\n"
             fi
             MENU="${MENU}[exec] (Open) {"$0" open ${NAME} ${RM}}\n"
             if [ "$RM" = "1" ]; then
                 if [ $FSTYPE = "udf" ]; then # likely video DVD
                     MENU="${MENU}[exec] (Play) {$DVD_PLAY_VIDEO ${NAME}}\n"
                 fi
-                MENU="${MENU}[separator]\n[exec] (⏏ ${MODEL}) {eject -T ${NAME}}\n"
+                if [ -z "$MOUNTPOINT" ]; then # not mounted
+                    MENU="${MENU}[separator]\n[exec] (⏏ ${MODEL}) {eject -T ${NAME}}\n"
+                fi
+            fi
+            if [ ! -z "$MOUNTPOINT" ]; then # mounted
+                MENU="${MENU}[separator]\n[exec] (Eject) {"$0" unmount ${NAME} ${RM}}\n"
             fi
         fi
         MENU="${MENU}[end]\n"
