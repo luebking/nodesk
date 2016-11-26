@@ -1,0 +1,79 @@
+#!/bin/sh
+
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+# Copyright (C) 2016 Thomas Lübking, https://github.com/luebking/nodesk
+#
+# Everyone is permitted to copy and distribute verbatim or modified
+# copies of this script, and changing it is allowed as long
+# as the name is changed.
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#
+
+# Set a reminder message, basically call a notification at a certain time
+
+# Usage:
+# 1. remind at <time and date>
+
+# Requires:
+# 1. at
+# 2. notify (from nodesk scripts)
+# 3. fbrun (from fluxbox)
+# 4. sed
+
+COLOR_BG='#272727'
+COLOR_FG='#fafafa'
+FONT='San Francisco Display-16'
+
+######################################
+
+
+GUI=false
+if [ ! -z $DISPLAY ] && [ $# = 0 ]; then
+    GUI=true
+fi
+
+usage() {
+    echo "Usage: `basename $0` [at <time and date>]"
+    exit 1
+}
+
+read_input() {
+    echo "`fbrun -bg "$COLOR_BG" -fg "$COLOR_FG" -font "$FONT" -print -hf /dev/null -cf /dev/null -center -title "$1"`"
+}
+
+testjob() {
+    TESTJOB="`"$@"  2>&1 < /dev/null`"
+    TESTJOB="`echo $TESTJOB | sed 's/.* job \([0-9]*\) .*/\1/'`"
+    if [ -z "${TESTJOB##*[!0-9]*}" ]; then
+        return 1
+    fi
+    atrm $TESTJOB > /dev/null 2>&1
+    return 0
+}
+
+$GUI || [ "$1" == "at" ] || usage
+
+
+if $GUI; then
+    while true; do
+        JOBDATE="`read_input 'Remind when?'`"
+        [ -z "$JOBDATE" ] && exit 1
+        JOBCALL="at $JOBDATE"
+        testjob at "$JOBDATE" && break
+    done
+else
+    if ! testjob "$@"; then
+        echo "$TESTJOB"
+        usage
+    fi
+    JOBCALL="$@"
+fi
+
+MSG="`read_input 'Remind of what?'`"
+echo 'notify "'"$MSG"'"' | $JOBCALL
