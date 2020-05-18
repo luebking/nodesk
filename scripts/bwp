@@ -71,7 +71,7 @@ c|create|gen|g|generate)
     mkdir -p "$TDIR"
     cp "$2" "$TDIR/base.jpg"
     cp "$3" "$TDIR/tile.png"
-    if (( ${#} > 4 )); then
+    if (( ${#} > 4 )) && [ -e "$4" ]; then
         cp "$4" "$TDIR/center.png"
     fi
 
@@ -107,11 +107,23 @@ c|create|gen|g|generate)
     rm -r "${TDIR}"
     ;;
 
+r|restore)
+
+    if [ -e ~/.bwp_restore ]; then
+        sh ~/.bwp_restore
+    else
+        echo "No wallpaper config stored"
+    fi
+    ;;
+
 *)
 
-    [ -z $1 ] && exit
+    [ -z "$1" ] && exit
 
-    # xsetroot -solid black
+    echo "$0 $@" > ~/.bwp_restore
+
+    ASPECT='!'
+    [ "${@: -1}" = "=" ] && ASPECT='^'
 
     if [[ "$1" = *.bwp ]]; then
         FILE=`basename "$1"`
@@ -135,8 +147,8 @@ c|create|gen|g|generate)
         tar -xf "$FILE"
     else
         cp "$1" "/tmp/$FILE/base.jpg"
-        [ -z "$2" ] || cp "$2" "/tmp/$FILE/tile.png"
-        [ -z "$3" ] || cp "$3" "/tmp/$FILE/center.png"
+        [ -z "$2" ] || cp "$2" "/tmp/$FILE/tile.png" >/dev/null 2>&1
+        [ -z "$3" ] || cp "$3" "/tmp/$FILE/center.png" >/dev/null 2>&1
         cd "/tmp/$FILE/"
     fi
 
@@ -146,6 +158,7 @@ c|create|gen|g|generate)
     fi
 
     while read OUT STATE GEO_1 GEO_2 JUNK; do
+
         if [ "$OUT" = "Screen" ] && [[ "$JUNK" = *" current "* ]]; then
             SZ="${JUNK#* current }"
             SZ="${SZ%%,*}"
@@ -157,30 +170,34 @@ c|create|gen|g|generate)
             fi
             continue
         fi
-        if [ "$STATE" != connected ]; then
-            continue
-        fi
+
+        #
+        [ "$STATE" != connected ] &&  continue
+
+        # check whether the output is actually in use and on what geometry
         if [[ "$GEO_1" = *x*+*+* ]]; then
             GEO="$GEO_1"
         elif [[ "$GEO_2" = *x*+*+* ]]; then
             GEO="$GEO_2"
         else
-            continue
+            continue # nope, skip
         fi
+
         SZ=${GEO%%+*}
+        POS=+${GEO#*+}
         if $HAVE_GM; then
             if [ -e tile.png ]; then
-                IMG_CMD+=" gm composite -tile tile.png -resize ${SZ}! base.jpg out.bmp;"
+                IMG_CMD+=" gm composite -tile tile.png -resize '${SZ}${ASPECT}' base.jpg out.bmp; gm mogrify -gravity center -crop ${SZ}+0+0 +repage out.bmp;"
                 [ -e center.png ] &&  IMG_CMD+=" gm composite -gravity center center.png out.bmp out.bmp;"
             elif [ -e center.png ]; then 
-                IMG_CMD+=" gm composite -gravity center center.png -resize ${SZ}! base.jpg out.bmp;"
+                IMG_CMD+=" gm composite -gravity center center.png -resize '${SZ}${ASPECT}' base.jpg out.bmp; gm mogrify -gravity center -crop ${SZ}+0+0 +repage out.bmp;"
             fi
-            IMG_CMD+=" gm composite -compose Copy -geometry $GEO out.bmp bwp.bmp bwp.bmp;"
+            IMG_CMD+=" gm composite -geometry $POS -compose Copy out.bmp bwp.bmp bwp.bmp;"
         else
-            IMG_CMD+=" \( mpr:base -scale ${SZ}!"
+            IMG_CMD+=" \( mpr:base -scale '${SZ}${ASPECT}' -gravity Center -crop ${SZ}+0+0"
             [ -z "$TILE_CMD" ] || IMG_CMD+=" -compose Over -size $SZ tile:mpr:tile -composite"
             [ -z "$CENTER_CMD" ] || IMG_CMD+=" mpr:center -compose Over -gravity Center -composite"
-            IMG_CMD+=" \) -compose Copy -gravity undefined -geometry $GEO -composite"
+            IMG_CMD+=" \) -compose Copy -gravity NorthWest -geometry $POS -composite"
         fi
     done < <(xrandr --current)
 
@@ -188,9 +205,8 @@ c|create|gen|g|generate)
         eval "$ROOT_CMD $IMG_CMD"
         feh --no-xinerama --bg-center bwp.bmp
     else
-        eval "convert base.jpg -write mpr:base +delete $ROOT_CMD $CENTER_CMD $TILE_CMD mpr:root $IMG_CMD bwp.jpg"
-        echo "convert base.jpg -write mpr:base +delete $ROOT_CMD $CENTER_CMD $TILE_CMD mpr:root $IMG_CMD bwp.jpg"
-        feh --no-xinerama --bg-center bwp.jpg
+        eval "convert base.jpg -write mpr:base +delete $ROOT_CMD $CENTER_CMD $TILE_CMD mpr:root $IMG_CMD bwp.bmp"
+        feh --no-xinerama --bg-center bwp.bmp
     fi
 
 
