@@ -26,12 +26,13 @@
 # 3. fbrun (from fluxbox)
 # 4. sed
 
-COLOR_BG='#272727'
-COLOR_FG='#fafafa'
-FONT='San Francisco Display-16'
+OSD_BG='#272727'
+OSD_FG='#fafafa'
+OSD_FONT='San Francisco Display-16'
 
 ######################################
 
+. $HOME/.config/nodesk.theme
 
 GUI=false
 if [ ! -z $DISPLAY ] && [ $# = 0 ]; then
@@ -44,7 +45,7 @@ usage() {
 }
 
 read_input() {
-    echo "`fbrun -bg "$COLOR_BG" -fg "$COLOR_FG" -font "$FONT" -print -hf /dev/null -cf /dev/null -center -title "$1"`"
+    echo "`fbrun -bg "$OSD_BG" -fg "$OSD_FG" -font "$OSD_FONT" -print -hf /dev/null -cf /dev/null -center -title "$1"`"
 }
 
 testjob() {

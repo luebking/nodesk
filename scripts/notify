@@ -24,9 +24,11 @@
 #    want sound
 
 SOUND_FILE="$HOME/.local/share/sounds/Hello.mp3"
-FONT="San Francisco Display-12" # Apples new font - bit white, but nice
-COLOR_BG='#272727'
-COLOR_FG='#FAFAFA'
+OSD_FONT="San Francisco Display-12" # Apples new font - bit white, but nice
+OSD_BG='#272727'
+OSD_FG='#FAFAFA'
+
+. $HOME/.config/nodesk.theme
 
 mplayer "$SOUND_FILE" </dev/null >/dev/null 2>&1 &
 
@@ -38,10 +40,10 @@ else
     MESSAGE="`echo -e "$2"`"
 fi
 
-read HEIGHT WIDTH < <(wc -Ll <<< "$MESSAGE")
+read HEIGHT WIDTH < <(echo -e "$HEADER $MESSAGE" | wc -Ll)
 
 WIDTH=$((8*WIDTH + 16))
 
 DISPLAY=:0 dzen2 -p $3 -e 'onstart=uncollapse,unhide;button1=exit:1' \
-                 -y 32 -x -${WIDTH} -sa c -l $HEIGHT -w $WIDTH -fn "$FONT" \
-                 -bg "$COLOR_BG" -fg "$COLOR_FG" < <(echo "$HEADER"; echo "$MESSAGE")
+                 -y 32 -x -${WIDTH} -sa c -l $HEIGHT -w $WIDTH -fn "$OSD_FONT" \
+                 -bg "$OSD_BG" -fg "$OSD_FG" < <(echo "$HEADER"; echo "$MESSAGE")

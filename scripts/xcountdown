@@ -36,10 +36,11 @@
 # It's on youtube, rocket scene after ~76 Minutes, lasts 15 minutes or so.
 # Go, watch it!
 
-FONT="San Francisco Display-16"
-COLOR_BG='#272727'
-COLOR_FG='#fafafa'
+OSD_FONT="San Francisco Display-16"
+OSD_BG='#272727'
+OSD_FG='#fafafa'
 
+. $HOME/.config/nodesk.theme
 
 COUNT=${1:-10}
 SCALE=${2:-s}
@@ -63,7 +64,7 @@ if [ "$5" = "rescue" ]; then
     ACTIONS="${ACTIONS};button1=exit:1"
 fi
 
-dzen2 -e "$ACTIONS" -y 32 -x -${WIDTH} -sa c -l 1 -w $WIDTH -fn "$FONT" -bg "$COLOR_BG" -fg "$COLOR_FG" < \
+dzen2 -e "$ACTIONS" -y 32 -x -${WIDTH} -sa c -l 1 -w $WIDTH -fn "$OSD_FONT" -bg "$OSD_BG" -fg "$OSD_FG" < \
 <(echo "$3" # Title
 for ((i=$COUNT; i>0; --i)); do
     if [ "$SCALE" = "m" -a "$i" = "60" ]; then
@@ -74,5 +75,5 @@ for ((i=$COUNT; i>0; --i)); do
     sleep 1${SCALE}
 done)
 if [ "$?" = "0" ]; then
-    $4
+    eval $4
 fi
