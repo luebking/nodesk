@@ -166,12 +166,6 @@ static conv		*gaussianMap;
 #define SHADOWS		1
 #define SHARP_SHADOW	0
 
-typedef enum _compMode {
-    CompSimple,		/* looks like a regular X server */
-    CompServerShadows,	/* use window alpha for shadow; sharp, but precise */
-    CompClientShadows,	/* use window extents for shadow, blurred */
-} CompMode;
-
 static void
 determine_mode(Display *dpy, win *w);
 
@@ -180,8 +174,6 @@ get_opacity_percent(Display *dpy, win *w, double def);
 
 static XserverRegion
 win_extents (Display *dpy, win *w);
-
-static CompMode		compMode = CompSimple;
 
 static int		shadowRadius = 12;
 static int		shadowOffsetX = -15;
@@ -835,54 +827,39 @@ win_extents (Display *dpy, win *w)
     r.y = w->a.y;
     r.width = w->a.width + w->a.border_width * 2;
     r.height = w->a.height + w->a.border_width * 2;
-    if (compMode != CompSimple && !(w->windowType == winDockAtom && excludeDockShadows))
-    {
-	if (compMode == CompServerShadows || w->mode != WINDOW_ARGB)
-	{
+    if (!(w->windowType == winDockAtom && excludeDockShadows)) {
+
 	    XRectangle  sr;
 
-	    if (compMode == CompServerShadows)
-	    {
-		w->shadow_dx = 2;
-		w->shadow_dy = 7;
-		w->shadow_width = w->a.width;
-		w->shadow_height = w->a.height;
-	    }
-	    else
-	    {
 		w->shadow_dx = shadowOffsetX;
 		w->shadow_dy = shadowOffsetY;
-		if (!w->shadow)
-		{
+		if (!w->shadow) {
 		    double	opacity = shadowOpacity;
 		    if (w->mode == WINDOW_TRANS)
-			opacity = opacity * ((double)w->opacity)/((double)OPAQUE);
+                opacity = opacity * ((double)w->opacity)/((double)OPAQUE);
 		    w->shadow = shadow_picture (dpy, opacity, w->alphaPict,
 						w->a.width + w->a.border_width * 2,
 						w->a.height + w->a.border_width * 2,
 						&w->shadow_width, &w->shadow_height);
-		}
 	    }
 	    sr.x = w->a.x + w->shadow_dx;
 	    sr.y = w->a.y + w->shadow_dy;
 	    sr.width = w->shadow_width;
 	    sr.height = w->shadow_height;
-	    if (sr.x < r.x)
-	    {
-		r.width = (r.x + r.width) - sr.x;
-		r.x = sr.x;
+	    if (sr.x < r.x) {
+            r.width = (r.x + r.width) - sr.x;
+            r.x = sr.x;
 	    }
-	    if (sr.y < r.y)
-	    {
-		r.height = (r.y + r.height) - sr.y;
-		r.y = sr.y;
+	    if (sr.y < r.y) {
+            r.height = (r.y + r.height) - sr.y;
+            r.y = sr.y;
 	    }
 	    if (sr.x + sr.width > r.x + r.width)
-		r.width = sr.x + sr.width - r.x;
+            r.width = sr.x + sr.width - r.x;
 	    if (sr.y + sr.height > r.y + r.height)
-		r.height = sr.y + sr.height - r.y;
+            r.height = sr.y + sr.height - r.y;
 	}
-    }
+
     return XFixesCreateRegion (dpy, &r, 1);
 }
 
@@ -1038,95 +1015,68 @@ paint_all (Display *dpy, XserverRegion region)
 #endif
     XFixesSetPictureClipRegion (dpy, rootBuffer, 0, 0, region);
     paint_root (dpy);
-    for (w = t; w; w = w->prev_trans)
-    {
-	XFixesSetPictureClipRegion (dpy, rootBuffer, 0, 0, w->borderClip);
-	switch (compMode) {
-	case CompSimple:
-	    break;
-	case CompServerShadows:
-	    /* dont' bother drawing shadows on desktop windows */
-	    if (w->windowType == winDesktopAtom)
-		break;
-	    set_ignore (dpy, NextRequest (dpy));
-	    if (w->opacity != OPAQUE && !w->shadowPict)
-		w->shadowPict = solid_picture (dpy, True,
-					       (double) w->opacity / OPAQUE * 0.3,
-					       0, 0, 0);
-	    XRenderComposite (dpy, PictOpOver,
-			      w->shadowPict ? w->shadowPict : transBlackPicture,
-			      w->picture, rootBuffer,
-			      0, 0, 0, 0,
-			      w->a.x + w->shadow_dx,
-			      w->a.y + w->shadow_dy,
-			      w->shadow_width, w->shadow_height);
-	    break;
-	case CompClientShadows:
-	    /* don't bother drawing shadows on desktop windows */
-	    if (w->shadow && w->windowType != winDesktopAtom)
-	    {
-		XRenderComposite (dpy, PictOpOver, blackPicture, w->shadow, rootBuffer,
-				  0, 0, 0, 0,
-				  w->a.x + w->shadow_dx,
-				  w->a.y + w->shadow_dy,
-				  w->shadow_width, w->shadow_height);
-	    }
-	    break;
-	}
-	if (w->opacity != OPAQUE && !w->alphaPict)
-	    w->alphaPict = solid_picture (dpy, False,
-					  (double) w->opacity / OPAQUE, 0, 0, 0);
-	if (w->mode == WINDOW_TRANS)
-	{
-	    int	x, y, wid, hei;
-	    XFixesIntersectRegion(dpy, w->borderClip, w->borderClip, w->borderSize);
-	    XFixesSetPictureClipRegion(dpy, rootBuffer, 0, 0, w->borderClip);
+    for (w = t; w; w = w->prev_trans) {
+        XFixesSetPictureClipRegion (dpy, rootBuffer, 0, 0, w->borderClip);
+
+        /* don't bother drawing shadows on desktop windows */
+        if (w->shadow && w->windowType != winDesktopAtom) {
+        XRenderComposite (dpy, PictOpOver, blackPicture, w->shadow, rootBuffer,
+                  0, 0, 0, 0,
+                  w->a.x + w->shadow_dx,
+                  w->a.y + w->shadow_dy,
+                  w->shadow_width, w->shadow_height);
+        }
+
+        if (w->opacity != OPAQUE && !w->alphaPict)
+            w->alphaPict = solid_picture (dpy, False,
+                          (double) w->opacity / OPAQUE, 0, 0, 0);
+        if (w->mode == WINDOW_TRANS) {
+            int	x, y, wid, hei;
+            XFixesIntersectRegion(dpy, w->borderClip, w->borderClip, w->borderSize);
+            XFixesSetPictureClipRegion(dpy, rootBuffer, 0, 0, w->borderClip);
 #if HAS_NAME_WINDOW_PIXMAP
-	    x = w->a.x;
-	    y = w->a.y;
-	    wid = w->a.width + w->a.border_width * 2;
-	    hei = w->a.height + w->a.border_width * 2;
+            x = w->a.x;
+            y = w->a.y;
+            wid = w->a.width + w->a.border_width * 2;
+            hei = w->a.height + w->a.border_width * 2;
 #else
-	    x = w->a.x + w->a.border_width;
-	    y = w->a.y + w->a.border_width;
-	    wid = w->a.width;
-	    hei = w->a.height;
+            x = w->a.x + w->a.border_width;
+            y = w->a.y + w->a.border_width;
+            wid = w->a.width;
+            hei = w->a.height;
 #endif
-	    set_ignore (dpy, NextRequest (dpy));
-	    XRenderComposite (dpy, PictOpOver, w->picture, w->alphaPict, rootBuffer,
-			      0, 0, 0, 0,
-			      x, y, wid, hei);
-	}
-	else if (w->mode == WINDOW_ARGB)
-	{
-	    int	x, y, wid, hei;
-	    XFixesIntersectRegion(dpy, w->borderClip, w->borderClip, w->borderSize);
-	    XFixesSetPictureClipRegion(dpy, rootBuffer, 0, 0, w->borderClip);
+            set_ignore (dpy, NextRequest (dpy));
+            XRenderComposite (dpy, PictOpOver, w->picture, w->alphaPict, rootBuffer,
+                      0, 0, 0, 0,
+                      x, y, wid, hei);
+        } else if (w->mode == WINDOW_ARGB) {
+            int	x, y, wid, hei;
+            XFixesIntersectRegion(dpy, w->borderClip, w->borderClip, w->borderSize);
+            XFixesSetPictureClipRegion(dpy, rootBuffer, 0, 0, w->borderClip);
 #if HAS_NAME_WINDOW_PIXMAP
-	    x = w->a.x;
-	    y = w->a.y;
-	    wid = w->a.width + w->a.border_width * 2;
-	    hei = w->a.height + w->a.border_width * 2;
+            x = w->a.x;
+            y = w->a.y;
+            wid = w->a.width + w->a.border_width * 2;
+            hei = w->a.height + w->a.border_width * 2;
 #else
-	    x = w->a.x + w->a.border_width;
-	    y = w->a.y + w->a.border_width;
-	    wid = w->a.width;
-	    hei = w->a.height;
+            x = w->a.x + w->a.border_width;
+            y = w->a.y + w->a.border_width;
+            wid = w->a.width;
+            hei = w->a.height;
 #endif
-	    set_ignore (dpy, NextRequest (dpy));
-	    XRenderComposite (dpy, PictOpOver, w->picture, w->alphaPict, rootBuffer,
-			      0, 0, 0, 0,
-			      x, y, wid, hei);
-	}
-	XFixesDestroyRegion (dpy, w->borderClip);
-	w->borderClip = None;
+            set_ignore (dpy, NextRequest (dpy));
+            XRenderComposite (dpy, PictOpOver, w->picture, w->alphaPict, rootBuffer,
+                      0, 0, 0, 0,
+                      x, y, wid, hei);
+        }
+        XFixesDestroyRegion (dpy, w->borderClip);
+        w->borderClip = None;
     }
     XFixesDestroyRegion (dpy, region);
-    if (rootBuffer != rootPicture)
-    {
-	XFixesSetPictureClipRegion (dpy, rootBuffer, 0, 0, None);
-	XRenderComposite (dpy, PictOpSrc, rootBuffer, None, rootPicture,
-			  0, 0, 0, 0, 0, 0, root_width, root_height);
+    if (rootBuffer != rootPicture) {
+        XFixesSetPictureClipRegion (dpy, rootBuffer, 0, 0, None);
+        XRenderComposite (dpy, PictOpSrc, rootBuffer, None, rootPicture,
+                            0, 0, 0, 0, 0, 0, root_width, root_height);
     }
 }
 
@@ -1147,14 +1097,11 @@ repair_win (Display *dpy, win *w)
 {
     XserverRegion   parts;
 
-    if (!w->damaged)
-    {
+    if (!w->damaged) {
 	parts = win_extents (dpy, w);
 	set_ignore (dpy, NextRequest (dpy));
 	XDamageSubtract (dpy, w->damage, None, None);
-    }
-    else
-    {
+    } else {
 	XserverRegion	o;
 	parts = XFixesCreateRegion (dpy, NULL, 0);
 	set_ignore (dpy, NextRequest (dpy));
@@ -1162,14 +1109,6 @@ repair_win (Display *dpy, win *w)
 	XFixesTranslateRegion (dpy, parts,
 			       w->a.x + w->a.border_width,
 			       w->a.y + w->a.border_width);
-	if (compMode == CompServerShadows)
-	{
-	    o = XFixesCreateRegion (dpy, NULL, 0);
-	    XFixesCopyRegion (dpy, o, parts);
-	    XFixesTranslateRegion (dpy, o, w->shadow_dx, w->shadow_dy);
-	    XFixesUnionRegion (dpy, parts, parts, o);
-	    XFixesDestroyRegion (dpy, o);
-	}
     }
     add_damage (dpy, parts);
     w->damaged = 1;
@@ -2072,7 +2011,7 @@ main (int argc, char **argv)
     char	    *display = NULL;
     int		    o;
 
-    while ((o = getopt (argc, argv, "D:I:O:d:r:o:l:t:scnfFCaS")) != -1)
+    while ((o = getopt (argc, argv, "D:I:O:d:r:o:l:t:fFCaS")) != -1)
     {
 	switch (o) {
 	case 'd':
@@ -2093,17 +2032,8 @@ main (int argc, char **argv)
 	    if (fade_out_step <= 0)
 		fade_out_step = 0.01;
 	    break;
-	case 's':
-	    compMode = CompServerShadows;
-	    break;
-	case 'c':
-	    compMode = CompClientShadows;
-	    break;
 	case 'C':
 	    excludeDockShadows = True;
-	    break;
-	case 'n':
-	    compMode = CompSimple;
 	    break;
 	case 'f':
 	    fadeWindows = True;
@@ -2199,11 +2129,8 @@ main (int argc, char **argv)
 
     pa.subwindow_mode = IncludeInferiors;
 
-    if (compMode == CompClientShadows)
-    {
 	gaussianMap = make_gaussian_map(dpy, shadowRadius);
 	presum_gaussian (gaussianMap);
-    }
 
     root_width = DisplayWidth (dpy, scr);
     root_height = DisplayHeight (dpy, scr);
@@ -2214,34 +2141,31 @@ main (int argc, char **argv)
 					CPSubwindowMode,
 					&pa);
     blackPicture = solid_picture (dpy, True, 1, 0, 0, 0);
-    if (compMode == CompServerShadows)
-	transBlackPicture = solid_picture (dpy, True, 0.3, 0, 0, 0);
+
     allDamage = None;
     clipChanged = True;
     XGrabServer (dpy);
-    if (autoRedirect)
-	XCompositeRedirectSubwindows (dpy, root, CompositeRedirectAutomatic);
-    else
-    {
-	XCompositeRedirectSubwindows (dpy, root, CompositeRedirectManual);
-	XSelectInput (dpy, root,
-		      SubstructureNotifyMask|
-		      ExposureMask|
-		      StructureNotifyMask|
-		      PropertyChangeMask);
-	XShapeSelectInput (dpy, root, ShapeNotifyMask);
-	XQueryTree (dpy, root, &root_return, &parent_return, &children, &nchildren);
-	for (i = 0; i < nchildren; i++)
-	    add_win (dpy, children[i], i ? children[i-1] : None);
-	XFree (children);
+    if (autoRedirect) {
+        XCompositeRedirectSubwindows (dpy, root, CompositeRedirectAutomatic);
+    } else {
+        XCompositeRedirectSubwindows (dpy, root, CompositeRedirectManual);
+        XSelectInput (dpy, root,
+                  SubstructureNotifyMask|
+                  ExposureMask|
+                  StructureNotifyMask|
+                  PropertyChangeMask);
+        XShapeSelectInput (dpy, root, ShapeNotifyMask);
+        XQueryTree (dpy, root, &root_return, &parent_return, &children, &nchildren);
+        for (i = 0; i < nchildren; i++)
+            add_win (dpy, children[i], i ? children[i-1] : None);
+        XFree (children);
     }
     XUngrabServer (dpy);
     ufd.fd = ConnectionNumber (dpy);
     ufd.events = POLLIN;
     if (!autoRedirect)
-	paint_all (dpy, None);
-    for (;;)
-    {
+        paint_all (dpy, None);
+    for (;;) {
 	/*	dump_wins (); */
 	do {
 	    if (autoRedirect)
