@@ -1030,26 +1030,7 @@ paint_all (Display *dpy, XserverRegion region)
         if (w->opacity != OPAQUE && !w->alphaPict)
             w->alphaPict = solid_picture (dpy, False,
                           (double) w->opacity / OPAQUE, 0, 0, 0);
-        if (w->mode == WINDOW_TRANS) {
-            int	x, y, wid, hei;
-            XFixesIntersectRegion(dpy, w->borderClip, w->borderClip, w->borderSize);
-            XFixesSetPictureClipRegion(dpy, rootBuffer, 0, 0, w->borderClip);
-#if HAS_NAME_WINDOW_PIXMAP
-            x = w->a.x;
-            y = w->a.y;
-            wid = w->a.width + w->a.border_width * 2;
-            hei = w->a.height + w->a.border_width * 2;
-#else
-            x = w->a.x + w->a.border_width;
-            y = w->a.y + w->a.border_width;
-            wid = w->a.width;
-            hei = w->a.height;
-#endif
-            set_ignore (dpy, NextRequest (dpy));
-            XRenderComposite (dpy, PictOpOver, w->picture, w->alphaPict, rootBuffer,
-                      0, 0, 0, 0,
-                      x, y, wid, hei);
-        } else if (w->mode == WINDOW_ARGB) {
+        if (w->mode == WINDOW_TRANS || w->mode == WINDOW_ARGB) {
             int	x, y, wid, hei;
             XFixesIntersectRegion(dpy, w->borderClip, w->borderClip, w->borderSize);
             XFixesSetPictureClipRegion(dpy, rootBuffer, 0, 0, w->borderClip);
