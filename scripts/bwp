@@ -43,6 +43,28 @@ else
     echo -e "Error: This tool requires GraphicsMagick or ImageMagick, but neither was found"
 fi
 
+
+IMG_CMD=""
+
+build_cmd() {
+    SZ=${1%%+*}
+    POS=+${1#*+}
+    if $HAVE_GM; then
+        if [ -e tile.png ]; then
+            IMG_CMD+=" gm composite -tile tile.png -resize '${SZ}${ASPECT}' base.jpg out.bmp; gm mogrify -gravity center -crop ${SZ}+0+0 +repage out.bmp;"
+            [ -e center.png ] &&  IMG_CMD+=" gm composite -gravity center center.png out.bmp out.bmp;"
+        elif [ -e center.png ]; then 
+            IMG_CMD+=" gm composite -gravity center center.png -resize '${SZ}${ASPECT}' base.jpg out.bmp; gm mogrify -gravity center -crop ${SZ}+0+0 +repage out.bmp;"
+        fi
+        IMG_CMD+=" gm composite -geometry $POS -compose Copy out.bmp bwp.bmp bwp.bmp;"
+    else
+        IMG_CMD+=" \( mpr:base -scale '${SZ}${ASPECT}' -gravity Center -crop ${SZ}+0+0"
+        [ -z "$TILE_CMD" ] || IMG_CMD+=" -compose Over -size $SZ tile:mpr:tile -composite"
+        [ -z "$CENTER_CMD" ] || IMG_CMD+=" mpr:center -compose Over -gravity Center -composite"
+        IMG_CMD+=" \) -compose Copy -gravity NorthWest -geometry $POS -composite"
+    fi
+}
+
 case "$1" in
 
 c|create|gen|g|generate)
@@ -119,6 +141,11 @@ r|restore)
 *)
 
     [ -z "$1" ] && exit
+    
+    if [[ "$1" = "dump:"* ]]; then
+        DUMP="${1#dump:}+0+0"
+        shift
+    fi
 
     echo "$0 $@" > ~/.bwp_restore
 
@@ -156,60 +183,63 @@ r|restore)
         [ -e tile.png ] && TILE_CMD="tile.png \( -clone 0 -background none \) +append \( -clone 0 -background none \) -append -write mpr:tile +delete"
         [ -e center.png ] && CENTER_CMD="center.png -write mpr:center +delete"
     fi
-
-    while read OUT STATE GEO_1 GEO_2 JUNK; do
-
-        if [ "$OUT" = "Screen" ] && [[ "$JUNK" = *" current "* ]]; then
-            SZ="${JUNK#* current }"
-            SZ="${SZ%%,*}"
-            SZ="${SZ// /}"
-            if $HAVE_GM; then
-                ROOT_CMD="gm convert -size $SZ xc:black bwp.bmp;"
-            else
-                ROOT_CMD="-size $SZ xc:black -write mpr:root +delete"
-            fi
-            continue
-        fi
-
-        #
-        [ "$STATE" != connected ] &&  continue
-
-        # check whether the output is actually in use and on what geometry
-        if [[ "$GEO_1" = *x*+*+* ]]; then
-            GEO="$GEO_1"
-        elif [[ "$GEO_2" = *x*+*+* ]]; then
-            GEO="$GEO_2"
-        else
-            continue # nope, skip
-        fi
-
-        SZ=${GEO%%+*}
-        POS=+${GEO#*+}
+    
+    if [ ! -z $DUMP ]; then
+        SZ=${DUMP%%+*}
+        build_cmd $DUMP
         if $HAVE_GM; then
-            if [ -e tile.png ]; then
-                IMG_CMD+=" gm composite -tile tile.png -resize '${SZ}${ASPECT}' base.jpg out.bmp; gm mogrify -gravity center -crop ${SZ}+0+0 +repage out.bmp;"
-                [ -e center.png ] &&  IMG_CMD+=" gm composite -gravity center center.png out.bmp out.bmp;"
-            elif [ -e center.png ]; then 
-                IMG_CMD+=" gm composite -gravity center center.png -resize '${SZ}${ASPECT}' base.jpg out.bmp; gm mogrify -gravity center -crop ${SZ}+0+0 +repage out.bmp;"
-            fi
-            IMG_CMD+=" gm composite -geometry $POS -compose Copy out.bmp bwp.bmp bwp.bmp;"
+            ROOT_CMD="gm convert -size $SZ xc:black bwp.bmp;"
         else
-            IMG_CMD+=" \( mpr:base -scale '${SZ}${ASPECT}' -gravity Center -crop ${SZ}+0+0"
-            [ -z "$TILE_CMD" ] || IMG_CMD+=" -compose Over -size $SZ tile:mpr:tile -composite"
-            [ -z "$CENTER_CMD" ] || IMG_CMD+=" mpr:center -compose Over -gravity Center -composite"
-            IMG_CMD+=" \) -compose Copy -gravity NorthWest -geometry $POS -composite"
+            ROOT_CMD="-size $SZ xc:black -write mpr:root +delete"
         fi
-    done < <(xrandr --current)
+    else
+        while read OUT STATE GEO_1 GEO_2 JUNK; do
+
+            if [ "$OUT" = "Screen" ] && [[ "$JUNK" = *" current "* ]]; then
+                SZ="${JUNK#* current }"
+                SZ="${SZ%%,*}"
+                SZ="${SZ// /}"
+                if $HAVE_GM; then
+                    ROOT_CMD="gm convert -size $SZ xc:black bwp.bmp;"
+                else
+                    ROOT_CMD="-size $SZ xc:black -write mpr:root +delete"
+                fi
+                continue
+            fi
+
+            [ "$STATE" != connected ] &&  continue
+
+            # check whether the output is actually in use and on what geometry
+            if [[ "$GEO_1" = *x*+*+* ]]; then
+                GEO="$GEO_1"
+            elif [[ "$GEO_2" = *x*+*+* ]]; then
+                GEO="$GEO_2"
+            else
+                continue # nope, skip
+            fi
+
+            build_cmd $GEO
+
+        done < <(xrandr --current)
+    fi
 
     if $HAVE_GM; then
         eval "$ROOT_CMD $IMG_CMD"
-        feh --no-xinerama --bg-center bwp.bmp
+        if [ -z "$DUMP" ]; then
+            feh --no-xinerama --bg-center bwp.bmp
+        else
+            echo "Writing /tmp/bwp_dump.jpg …"; gm convert -quality 95 bwp.bmp /tmp/bwp_dump.jpg
+        fi
     else
         eval "convert base.jpg -write mpr:base +delete $ROOT_CMD $CENTER_CMD $TILE_CMD mpr:root $IMG_CMD bwp.bmp"
-        feh --no-xinerama --bg-center bwp.bmp
+        if [ -z "$DUMP" ]; then
+            feh --no-xinerama --bg-center bwp.bmp
+        else
+            echo "Writing /tmp/bwp_dump.jpg …"; convert -quality 95 bwp.bmp /tmp/bwp_dump.jpg
+        fi
     fi
 
-
     rm -rf "/tmp/$FILE"
+    cp ~/.bwp_restore ~/.fehbg
     ;;
 esac 
