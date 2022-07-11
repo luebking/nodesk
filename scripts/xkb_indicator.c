@@ -30,6 +30,8 @@ Then listens to xkb events and prints/sets updates when toggling between groups.
 
 Pass "2lc" if you want to print/set the ISO3166 2-letter-code rather than a full description,
 ie "de" instead of "German", "us" instead of "English (US)", etc.
+
+Pass "noprop" to avoid setting the root's WM_NAME if you want some more elaborate string there.
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
@@ -43,7 +45,7 @@ ie "de" instead of "German", "us" instead of "English (US)", etc.
 Atom wm_name;
 Atom string;
 
-void printGroup(Display *dpy, int grp, Bool useLabel) {
+void printGroup(Display *dpy, int grp, Bool useLabel, Bool stdOutOnly) {
 
     char *group;
     if (useLabel) {
@@ -63,7 +65,8 @@ void printGroup(Display *dpy, int grp, Bool useLabel) {
     }
 
     printf("%s\n", group);
-    XChangeProperty(dpy, RootWindow(dpy, DefaultScreen(dpy)), wm_name, string, 8, PropModeReplace, (unsigned char*)group, strlen(group));
+    if (!stdOutOnly)
+        XChangeProperty(dpy, RootWindow(dpy, DefaultScreen(dpy)), wm_name, string, 8, PropModeReplace, (unsigned char*)group, strlen(group));
 }
 
 int main(int argc, char **argv) {
@@ -74,7 +77,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
     
-    Bool useLabel = (argc < 2 || strcmp(argv[1], "2lc"));
+    Bool useLabel = True;
+    Bool stdOutOnly = False;
+    for (int i = 1; i < argc; ++i) {
+        if (!strcmp(argv[i], "2lc"))
+            useLabel = False;
+        else if (!strcmp(argv[i], "noprop"))
+            stdOutOnly = True;
+    }
     
     wm_name = XInternAtom(dpy, "WM_NAME", 0);
     string = XInternAtom(dpy, "STRING", 0);
@@ -82,7 +92,7 @@ int main(int argc, char **argv) {
     XkbStateRec state;
     XkbGetState(dpy, XkbUseCoreKbd, &state);
     int lastlang = state.group;
-    printGroup(dpy, lastlang, useLabel);
+    printGroup(dpy, lastlang, useLabel, stdOutOnly);
     
     int opcode, xkbEventType, error, major, minor;
     XkbQueryExtension(dpy, &opcode, &xkbEventType, &error, &major, &minor);
@@ -96,7 +106,7 @@ int main(int argc, char **argv) {
             if (xkbe->any.xkb_type == XkbStateNotify) {
                 if (xkbe->state.group != lastlang) {
                     lastlang = xkbe->state.group;
-                    printGroup(dpy, lastlang, useLabel);
+                    printGroup(dpy, lastlang, useLabel, stdOutOnly);
                 }
             }
         }
