@@ -32,6 +32,10 @@ Pass "2lc" if you want to print/set the ISO3166 2-letter-code rather than a full
 ie "de" instead of "German", "us" instead of "English (US)", etc.
 
 Pass "noprop" to avoid setting the root's WM_NAME if you want some more elaborate string there.
+
+Pass "1" to only print/set the current group and quit
+
+Pass "wait" to wait for the next change, print/set the layout and quit.
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
@@ -79,11 +83,17 @@ int main(int argc, char **argv) {
     
     Bool useLabel = True;
     Bool stdOutOnly = False;
+    Bool single = False;
+    Bool waitEvent = False;
     for (int i = 1; i < argc; ++i) {
         if (!strcmp(argv[i], "2lc"))
             useLabel = False;
         else if (!strcmp(argv[i], "noprop"))
             stdOutOnly = True;
+        else if (!strcmp(argv[i], "1"))
+            single = True;
+        else if (!strcmp(argv[i], "wait"))
+            waitEvent = True;
     }
     
     wm_name = XInternAtom(dpy, "WM_NAME", 0);
@@ -92,8 +102,10 @@ int main(int argc, char **argv) {
     XkbStateRec state;
     XkbGetState(dpy, XkbUseCoreKbd, &state);
     int lastlang = state.group;
-    printGroup(dpy, lastlang, useLabel, stdOutOnly);
-    
+    if (!waitEvent)
+        printGroup(dpy, lastlang, useLabel, stdOutOnly);
+    if (single)
+        return 0;
     int opcode, xkbEventType, error, major, minor;
     XkbQueryExtension(dpy, &opcode, &xkbEventType, &error, &major, &minor);
     XkbSelectEventDetails(dpy, XkbUseCoreKbd, XkbStateNotify, XkbAllStateComponentsMask, XkbAllStateComponentsMask);
@@ -107,8 +119,11 @@ int main(int argc, char **argv) {
                 if (xkbe->state.group != lastlang) {
                     lastlang = xkbe->state.group;
                     printGroup(dpy, lastlang, useLabel, stdOutOnly);
+                    if (waitEvent)
+                        return 0;
                 }
             }
         }
     }
 }
+
