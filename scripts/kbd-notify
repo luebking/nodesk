@@ -26,12 +26,14 @@
 # 4. xset
 # 5. sleep (otherwise it's not going to "blink")
 
+#. $HOME/bin/.funcs/sleep.sh
+
 LOCK_FILE=/tmp/kdb-notify.lock.$USER
 
 case $1 in
 
 stop|off)
-    kill $(<"$LOCK_FILE")
+    [ -e "$LOCK_FILE" ] && kill $(<"$LOCK_FILE")
     exit
     ;;
 
@@ -39,29 +41,32 @@ toggle)
     if [ -e "$LOCK_FILE" ]; then
         $0 stop
     else
-        $0 start &
+        $0 _run_ &
     fi
     exit
     ;;
 
-start|on)
+_run_)
     ;;
 
 *)
-    if [ -e "$LOCK_FILE" ]; then
-        echo "Seems to already notify, try \"$0 stop\""
-    else
-        $0 start &
-    fi
+    [ -e "$LOCK_FILE" ] && kill -SIGUSR2 $(<"$LOCK_FILE") || exec $0 _run_ &
+#    if [ -e "$LOCK_FILE" ]; then
+#        echo "Seems to already notify, try \"$0 stop\""
+#    else
+#        $0 _run_ &
+#    fi
     exit
     ;;
 esac
 
+COUNT=1
+trap "((++COUNT))" USR2
 trap 'rm "$LOCK_FILE" > /dev/null 2>&1; xset -led 3; exit' INT TERM EXIT
 
 echo $$ > "$LOCK_FILE"
 while true; do
-    for ((i=0;i<3;++i)); do
+    for ((i=0;i<COUNT;++i)); do
         xset led 3
         sleep 0.4
         xset -led 3
